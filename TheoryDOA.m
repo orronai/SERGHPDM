@@ -48,7 +48,7 @@ title("Spectrum MVDR")
 figure(2);
 polarplot(theta / 180 * pi, p_mvdr_full)
 title("Spectrum MVDR")
-rlim([-20 0])
+rlim([-40 0])
 thetalim([0 180])
 
 figure(3);
@@ -93,7 +93,7 @@ title("Spectrum MVDR")
 figure(2);
 polarplot(theta / 180 * pi, p_mvdr_full_2)
 title("Spectrum MVDR")
-rlim([-20 0])
+rlim([-40 0])
 thetalim([0 180])
 
 figure(3);
