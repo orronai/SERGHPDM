@@ -39,7 +39,7 @@ monte_carlo_num = 100;
 
 %% Monte Carlo Correlation Matrix
 num_of_mics = [1 2 4 8 16];
-SNR_dB = 0;
+SNR_dB = 20;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 
 for index = 1 : length(num_of_mics)
@@ -69,7 +69,7 @@ end
 
 %% Constant SNR, Changing Number of Microphones
 num_of_mics = [1 2 4 8 16];
-SNR_dB = 10;
+SNR_dB = 20;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 mse = zeros(1, length(num_of_mics));
 mse_theoretical = zeros(1, length(num_of_mics));
@@ -109,16 +109,14 @@ mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
 figure(1);
+hold on
 plot(num_of_mics, mse)
-title("MSE Error of Estimated Signal Empirical Correlation Matrix")
-ylabel("MSE")
-xlabel("Number of Microphones")
-
-figure(2);
 plot(num_of_mics, mse_theoretical)
-title("MSE Error of Estimated Signal Theoretical Correlation Matrix")
+title("MSE Error of Estimated Signal")
 ylabel("MSE")
 xlabel("Number of Microphones")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
 
 
 %% Constant Number of Microphones, Changing SNR
@@ -162,17 +160,15 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(3);
+figure(2);
+hold on
 plot(SNR_dB, 10 * log10(mse))
-title("Log MSE Error of Estimated Signal Empirical Correlation Matrix")
-ylabel("MSE [dB]")
-xlabel("SNR [dB]")
-
-figure(4);
 plot(SNR_dB, 10 * log10(mse_theoretical))
-title("Log MSE Error of Estimated Signal Theoretical Correlation Matrix")
+title("Log MSE Error of Estimated Signal")
 ylabel("MSE [dB]")
 xlabel("SNR [dB]")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
 
 
 %% Constant SNR, Chaning Number of Microphones, With Interference
@@ -220,17 +216,15 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(5);
+figure(3);
+hold on
 plot(num_of_mics, mse)
-title("MSE Error of Estimated Signal Empirical Correlation Matrix")
-ylabel("MSE")
-xlabel("Number of Microphones")
-
-figure(6);
 plot(num_of_mics, mse_theoretical)
-title("MSE Error of Estimated Signal Theoretical Correlation Matrix")
+title("MSE Error of Estimated Signal")
 ylabel("MSE")
 xlabel("Number of Microphones")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
 
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Gain
@@ -281,18 +275,17 @@ for monte_carlo_index = 1 : monte_carlo_num
     end
 end
 mse = mse / monte_carlo_num;
+mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(7);
+figure(4);
+hold on
 plot(SIR_dB, 10 * log10(mse))
+plot(SIR_dB, 10 * log10(mse_theoretical))
 title("Log MSE Error of Estimated Signal Empirical Correlation Matrix")
 ylabel("MSE [dB]")
 xlabel("SIR [dB]")
-
-figure(8);
-plot(SIR_dB, 10 * log10(mse_theoretical))
-title("Log MSE Error of Estimated Signal Theoretical Correlation Matrix")
-ylabel("MSE [dB]")
-xlabel("SIR [dB]")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
 
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Position
@@ -342,17 +335,15 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(9);
+figure(5);
+hold on
 plot(angles, mse)
-title("MSE Error of Estimated Signal Empirical Correlation Matrix")
-ylabel("MSE")
-xlabel("Angle [rad]")
-
-figure(10);
 plot(angles, mse_theoretical)
-title("MSE Error of Estimated Signal Theoretical Correlation Matrix")
+title("MSE Error of Estimated Signal")
 ylabel("MSE")
 xlabel("Angle [rad]")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
 
 
 %% Functions
