@@ -11,6 +11,9 @@ Signal Enhancement using Riemannian Geometry of the HPD Manifold
     <a href="https://github.com/orronai">Or Ronai</a> •
     <a href="https://github.com/yuvalsitton">Yuval Sitton</a>
   </p>
+  <p align="center">
+    Supervisor: <a href="https://github.com/amitaybar">Amitay Bar</a>
+  </p>
 
 In this project, we leverage the Riemannian geometry of correlation matrices to address the problem of signal enhancement.
 In particular, we focus on signal enhancement in the presence of interference sources, which remains a challenging problem.
