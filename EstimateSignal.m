@@ -274,7 +274,7 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(3);
+figure(4);
 hold on
 plot(num_of_mics, mse)
 plot(num_of_mics, mse_theoretical)
@@ -335,7 +335,7 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(4);
+figure(5);
 hold on
 plot(SIR_dB, 10 * log10(mse))
 plot(SIR_dB, 10 * log10(mse_theoretical))
@@ -393,7 +393,7 @@ end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(5);
+figure(6);
 hold on
 plot(angles, mse)
 plot(angles, mse_theoretical)
