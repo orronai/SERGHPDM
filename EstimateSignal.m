@@ -28,7 +28,7 @@ signal_target = randn(1, sig_length) + 1j * randn(1, sig_length);
 signal_target = target_gain * signal_target / norm(signal_target);
 target_pos = [-100 100];
 
-SIR_dB = 20;
+SIR_dB = 10;
 inter_gain = target_gain / 10^(SIR_dB / 20);
 inter_sig = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig = inter_gain * inter_sig / norm(inter_sig);
@@ -58,7 +58,7 @@ for index = 1 : length(num_of_mics)
         mics_sig = steering_vec * signal_target;
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
-    
+
         phi_y = phi_y + noise_mics_sig * noise_mics_sig';
     end
     phi_y = phi_y / monte_carlo_num;
@@ -89,7 +89,7 @@ for monte_carlo_index = 1 : monte_carlo_num
         mics_sig = steering_vec * signal_target;
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
-    
+
         phi_y = noise_mics_sig * noise_mics_sig';
         [h_mvdr, estimated_sig] = MvdrCoefficients(steering_vec, phi_y, noise_mics_sig);
 
@@ -144,14 +144,14 @@ for monte_carlo_index = 1 : monte_carlo_num
         end
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
-    
+
         phi_y = noise_mics_sig * noise_mics_sig';
         [h_mvdr, estimated_sig] = MvdrCoefficients(steering_vec, phi_y, noise_mics_sig);
 
         theoretical_cor = steering_vec * steering_vec' + noise_gain^2 * eye(m);
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec, theoretical_cor, noise_mics_sig);
-        
+
         mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / length(signal_target);
         mse_theoretical(index) = mse_theoretical(index) + ...
             norm(estimated_sig_theoretical - mics_sig(1, :))^2 / length(signal_target);
@@ -167,6 +167,64 @@ plot(SNR_dB, 10 * log10(mse_theoretical))
 title("Log MSE Error of Estimated Signal")
 ylabel("MSE [dB]")
 xlabel("SNR [dB]")
+legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
+hold off
+
+
+%% Constant Number of Microphones, Constant SNR, Changing Number of Samples
+n_samples = [128 256 512 1024 2048 4096 8192 16384];
+SNR_dB = 10;
+noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
+
+m = 12;
+m_lin = (0 : m - 1)';
+mics_pos_mat = [m_lin * delta, zeros(m, 1)];
+
+mse = zeros(1, length(n_samples));
+mse_theoretical = zeros(1, length(n_samples));
+
+phase_mic = zeros(m, 1);
+for i = 1 : m
+    phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
+end
+steering_vec = exp(1j * phase_mic);
+steering_vec_norm = steering_vec / steering_vec(1);
+mics_sig = steering_vec * signal_target;
+
+for monte_carlo_index = 1 : monte_carlo_num
+    for index = 1 : length(n_samples)
+        n = n_samples(index);
+        signal_target_n_samples = randn(1, n) + 1j * randn(1, n);
+        signal_target_n_samples = target_gain * signal_target_n_samples / norm(signal_target_n_samples);
+        mics_sig = steering_vec * signal_target_n_samples;
+        added_noise = randn(size(mics_sig)) + 1j * randn(size(mics_sig));
+        for i = 1 : m
+            added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
+        end
+        noise_mics_sig = mics_sig + added_noise;
+
+        phi_y = noise_mics_sig * noise_mics_sig';
+        [h_mvdr, estimated_sig] = MvdrCoefficients(steering_vec_norm, phi_y, noise_mics_sig);
+
+        theoretical_cor = steering_vec_norm * steering_vec_norm' + noise_gain^2 * eye(m);
+        [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
+            steering_vec_norm, theoretical_cor, noise_mics_sig);
+
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / length(signal_target);
+        mse_theoretical(index) = mse_theoretical(index) + ...
+            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / length(signal_target);
+    end
+end
+mse = mse / monte_carlo_num;
+mse_theoretical = mse_theoretical / monte_carlo_num;
+
+figure(3);
+hold on
+plot(n_samples, mse)
+plot(n_samples, mse_theoretical)
+title("MSE Error of Estimated Signal")
+ylabel("MSE")
+xlabel("Number of Samples")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
 
@@ -290,7 +348,7 @@ hold off
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Position
 m = 12;
-SNR_dB = 80;
+SNR_dB = 60;
 angles = linspace(0, pi, 13);
 inter_pos_list = norm(target_pos) * [cos(angles)' sin(angles)'];
 noise_gain = target_gain / 10^(SNR_dB / 20);
@@ -317,7 +375,7 @@ for monte_carlo_index = 1 : monte_carlo_num
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
         steering_vec_inter = steering_vec_inter / steering_vec_inter(1);
-    
+
         phi_y = noise_mics_sig * noise_mics_sig';
         [h_mvdr, estimated_sig] = MvdrCoefficients(steering_vec, phi_y, noise_mics_sig);
 
