@@ -29,7 +29,6 @@ end
 plot(fro_norm)
 
 
-
 %% Random Definitions
 lambda = 0.087214428857715;
 delta = lambda / 2;
@@ -128,13 +127,12 @@ for monte_carlo_index = 1 : monte_carlo_num
         cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / num_of_mics(index);
         inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / num_of_mics(index);
 
-%         noise_first_mic_energy = norm(added_noise(1, :))^2 / length(signal_target);
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / ...
-            length(signal_target);
+        first_mic_clean_norm = norm(mics_sig(1, :))^2;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / first_mic_clean_norm;
         mse_noisy_h_mvdr(index) = mse_noisy_h_mvdr(index) + norm(estimated_sig_noisy_h_mvdr - mics_sig(1, :))^2 / ...
-            length(signal_target);
+            first_mic_clean_norm;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / length(signal_target);
+            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / first_mic_clean_norm;
     end
 end
 mse = mse / monte_carlo_num;
@@ -147,8 +145,8 @@ hold on
 plot(num_of_mics, mse)
 plot(num_of_mics, mse_noisy_h_mvdr)
 plot(num_of_mics, mse_theoretical)
-title("MSE Error of Estimated Signal")
-ylabel("MSE")
+title("NMSE Error of Estimated Signal")
+ylabel("NMSE")
 xlabel("Number of Microphones")
 legend("Empirical Correlation Matrix", "Empirical Correlation Matrix with Noisy MVDR Coeff", "Theoretical Correlation Matrix")
 hold off
@@ -204,10 +202,11 @@ for monte_carlo_index = 1 : monte_carlo_num
 
         cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / m;
         inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / m;
-%         noise_first_mic_energy = norm(added_noise(1, :))^2;
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / length(signal_target);
+
+        first_mic_clean_norm = norm(mics_sig(1, :))^2;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / first_mic_clean_norm;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / length(signal_target);
+            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / first_mic_clean_norm;
     end
 end
 mse = mse / monte_carlo_num;
@@ -281,10 +280,11 @@ for monte_carlo_index = 1 : monte_carlo_num
 
         cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / m;
         inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / m;
-%         noise_first_mic_energy = norm(added_noise(1, :))^2 / length(signal_target);
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / n;
+
+        first_mic_clean_norm = norm(mics_sig(1, :))^2;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / first_mic_clean_norm;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / n;
+            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / first_mic_clean_norm;
     end
 end
 mse = mse / monte_carlo_num;
@@ -294,24 +294,24 @@ inv_cov_error = inv_cov_error / monte_carlo_num;
 
 figure(8);
 hold on
-plot(n_samples, 10 * log10(mse))
-plot(n_samples, 10 * log10(mse_theoretical))
-title("MSE Error of Estimated Signal")
-ylabel("MSE")
-xlabel("Number of Samples")
+plot(log2(n_samples), 10 * log10(mse))
+plot(log2(n_samples), 10 * log10(mse_theoretical))
+title("Log NMSE Error of Estimated Signal")
+ylabel("Log NMSE")
+xlabel("Log2 Number of Samples")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
 
 figure(9);
-plot(n_samples, cov_error)
+plot(log2(n_samples), cov_error)
 title("Correlation Matrix Difference Frobenius Norm")
-xlabel("Number of Samples")
+xlabel("Log2 Number of Samples")
 ylabel("Frobenius Norm")
 
 figure(10);
-plot(n_samples, inv_cov_error)
+plot(log2(n_samples), inv_cov_error)
 title("Inverse Correlation Matrix Difference Frobenius Norm")
-xlabel("Number of Samples")
+xlabel("Log2 Number of Samples")
 ylabel("Frobenius Norm")
 
 
@@ -352,20 +352,21 @@ for monte_carlo_index = 1 : monte_carlo_num
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec, theoretical_cor, noise_mics_sig);
 
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig_clean(1, :))^2 / length(signal_target);
+        first_mic_clean_norm = norm(mics_sig(1, :))^2;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig_clean(1, :))^2 / first_mic_clean_norm;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig_clean(1, :))^2 / length(signal_target);
+            norm(estimated_sig_theoretical - mics_sig_clean(1, :))^2 / first_mic_clean_norm;
     end
 end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
 
-figure(4);
+figure(11);
 hold on
 plot(num_of_mics, mse)
 plot(num_of_mics, mse_theoretical)
-title("MSE Error of Estimated Signal")
-ylabel("MSE")
+title("NMSE Error of Estimated Signal")
+ylabel("NMSE")
 xlabel("Number of Microphones")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
