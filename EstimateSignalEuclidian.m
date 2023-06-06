@@ -2,7 +2,7 @@
 clc; clear all; close all;
 
 
-%% Check Ampirical Correlation Matrix
+%% Check Empirical Correlation Matrix
 monte_carlo_num = 500;
 n = 1024;
 num_of_mics = 4;
@@ -87,7 +87,7 @@ ylabel("Frobenius Norm")
 
 %% Constant SNR, Changing Number of Microphones
 num_of_mics = [1 2 : 2 : 20];
-SNR_dB = -10;
+SNR_dB = 50;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 mse = zeros(1, length(num_of_mics));
 mse_noisy_h_mvdr = zeros(1, length(num_of_mics));
@@ -220,8 +220,8 @@ figure(5);
 hold on
 plot(SNR_dB, 10 * log10(mse))
 plot(SNR_dB, 10 * log10(mse_theoretical))
-title("Log MSE Error of Estimated Signal")
-ylabel("MSE [dB]")
+title("Log NMSE Error of Estimated Signal")
+ylabel("NMSE [dB]")
 xlabel("SNR [dB]")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
@@ -281,10 +281,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / m;
         inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / m;
 
-        first_mic_clean_norm = norm(mics_sig(1, :))^2;
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / first_mic_clean_norm;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / n;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / first_mic_clean_norm;
+            norm(estimated_sig_theoretical - mics_sig(1, :))^2 / n;
     end
 end
 mse = mse / monte_carlo_num;
@@ -296,8 +295,8 @@ figure(8);
 hold on
 plot(log2(n_samples), 10 * log10(mse))
 plot(log2(n_samples), 10 * log10(mse_theoretical))
-title("Log NMSE Error of Estimated Signal")
-ylabel("Log NMSE")
+title("Log MSE Error of Estimated Signal")
+ylabel("Log MSE")
 xlabel("Log2 Number of Samples")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
@@ -373,7 +372,7 @@ hold off
 
 
 %% Constant Number of Microphones, Constant SNR, With Interference Changing Number of Samples
-n_samples = [128 256 512 1024 2048 4096 8192 16384];
+n_samples = [128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144];
 SNR_dB = 10;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 SIR_dB_n_samples = 10;
@@ -431,11 +430,11 @@ mse_theoretical = mse_theoretical / monte_carlo_num;
 
 figure(5);
 hold on
-plot(n_samples, mse)
-plot(n_samples, mse_theoretical)
+plot(log2(n_samples), mse)
+plot(log2(n_samples), mse_theoretical)
 title("MSE Error of Estimated Signal")
 ylabel("MSE")
-xlabel("Number of Samples")
+xlabel("Log2 Number of Samples")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
 
@@ -503,7 +502,7 @@ hold off
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Position
 m = 12;
-SNR_dB = 40;
+SNR_dB = 80;
 angles = linspace(0, pi, 13);
 inter_pos_list = norm(target_pos) * [cos(angles)' sin(angles)'];
 noise_gain = target_gain / 10^(SNR_dB / 20);
@@ -540,9 +539,10 @@ for monte_carlo_index = 1 : monte_carlo_num
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec, theoretical_cor, noise_mics_sig);
 
-        mse(index) = mse(index) + norm(estimated_sig - mics_sig_clean(1, :))^2 / length(signal_target);
+        first_mic_clean_norm = norm(mics_sig(1, :))^2;
+        mse(index) = mse(index) + norm(estimated_sig - mics_sig_clean(1, :))^2 / first_mic_clean_norm;
         mse_theoretical(index) = mse_theoretical(index) + ...
-            norm(estimated_sig_theoretical - mics_sig_clean(1, :))^2 / length(signal_target);
+            norm(estimated_sig_theoretical - mics_sig_clean(1, :))^2 / first_mic_clean_norm;
     end
 end
 mse = mse / monte_carlo_num;
@@ -550,17 +550,10 @@ mse_theoretical = mse_theoretical / monte_carlo_num;
 
 figure(7);
 hold on
-plot(angles, mse)
-plot(angles, mse_theoretical)
-title("MSE Error of Estimated Signal")
-ylabel("MSE")
+plot(angles * 180 / pi, mse)
+plot(angles * 180 / pi, mse_theoretical)
+title("NMSE Error of Estimated Signal")
+ylabel("NMSE")
 xlabel("Angle [rad]")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
-
-
-%% Functions
-function [MVDR_coeff, estimated_sig] = MvdrCoefficients(steering_vec, cov, noise_sig)
-    MVDR_coeff = pinv(cov) * steering_vec / (steering_vec' * pinv(cov) * steering_vec);
-    estimated_sig = MVDR_coeff' * noise_sig;
-end
