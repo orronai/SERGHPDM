@@ -18,6 +18,18 @@ end
 
 cov = cov / monte_carlo_num;
 
+
+%% Frobenius Norm
+fro_norm = zeros(10, 1);
+for i = 1 : 10
+    a = ones(i);
+    b = a * 1.1;
+    fro_norm(i) = norm(b - a, 'fro') / size(a, 1);
+end
+plot(fro_norm)
+
+
+
 %% Random Definitions
 lambda = 0.087214428857715;
 delta = lambda / 2;
@@ -34,13 +46,14 @@ inter_sig = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig = inter_gain * inter_sig / norm(inter_sig);
 inter_pos = [200 200];
 
-monte_carlo_num = 100;
+monte_carlo_num = 500;
 
 
 %% Monte Carlo Correlation Matrix
-num_of_mics = [1 2 4 8 16];
-SNR_dB = 20;
+num_of_mics = 2 : 2 : 20;
+SNR_dB = 50;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
+cov_mat_error = zeros(length(num_of_mics), 1);
 
 for index = 1 : length(num_of_mics)
     m = num_of_mics(index);
@@ -63,18 +76,26 @@ for index = 1 : length(num_of_mics)
     end
     phi_y = phi_y / monte_carlo_num;
     theoretical_correlation = steering_vec * steering_vec' + noise_gain^2 * eye(m);
-    cov_mat_error = theoretical_correlation - phi_y;  % Look at Cov mat error
+    cov_mat_error(index) = norm(theoretical_correlation - phi_y, 'fro') / num_of_mics(index);
 end
+
+figure(1);
+plot(num_of_mics, cov_mat_error);
+title("Correlation Matrix Difference Frobenius Norm")
+xlabel("Number of Microphones")
+ylabel("Frobenius Norm")
 
 
 %% Constant SNR, Changing Number of Microphones
-num_of_mics = [1 2 4 8 16];
-SNR_dB = 20;
+num_of_mics = [1 2 : 2 : 20];
+SNR_dB = -10;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 mse = zeros(1, length(num_of_mics));
 mse_noisy_h_mvdr = zeros(1, length(num_of_mics));
 mse_theoretical = zeros(1, length(num_of_mics));
 h_mvdr_noise_gain = sqrt(0.0001);
+cov_error = zeros(1, length(num_of_mics));
+inv_cov_error = zeros(1, length(num_of_mics));
 
 for monte_carlo_index = 1 : monte_carlo_num
     for index = 1 : length(num_of_mics)
@@ -104,8 +125,10 @@ for monte_carlo_index = 1 : monte_carlo_num
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec, theoretical_cor, noise_mics_sig);
 
-        cov_error = theoretical_cor - phi_y;
+        cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / num_of_mics(index);
+        inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / num_of_mics(index);
 
+%         noise_first_mic_energy = norm(added_noise(1, :))^2 / length(signal_target);
         mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / ...
             length(signal_target);
         mse_noisy_h_mvdr(index) = mse_noisy_h_mvdr(index) + norm(estimated_sig_noisy_h_mvdr - mics_sig(1, :))^2 / ...
@@ -117,8 +140,9 @@ end
 mse = mse / monte_carlo_num;
 mse_noisy_h_mvdr = mse_noisy_h_mvdr / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
+cov_error = cov_error / monte_carlo_num;
 
-figure(1);
+figure(2);
 hold on
 plot(num_of_mics, mse)
 plot(num_of_mics, mse_noisy_h_mvdr)
@@ -129,13 +153,28 @@ xlabel("Number of Microphones")
 legend("Empirical Correlation Matrix", "Empirical Correlation Matrix with Noisy MVDR Coeff", "Theoretical Correlation Matrix")
 hold off
 
+figure(3);
+plot(num_of_mics, cov_error)
+title("Correlation Matrix Difference Frobenius Norm")
+xlabel("Number of Microphones")
+ylabel("Frobenius Norm")
+
+figure(4);
+plot(num_of_mics, inv_cov_error)
+title("Inverse Correlation Matrix Difference Frobenius Norm")
+xlabel("Number of Microphones")
+ylabel("Frobenius Norm")
+
 
 %% Constant Number of Microphones, Changing SNR
 m = 12;
-SNR_dB = linspace(-20, 10, 7);
+SNR_dB = linspace(-20, 40, 13);
 SNR_lin = 10.^(SNR_dB / 20);
 mse = zeros(1, length(SNR_dB));
 mse_theoretical = zeros(1, length(SNR_dB));
+mse_mvdr = zeros(1, length(SNR_dB));
+cov_error = zeros(1, length(SNR_dB));
+inv_cov_error = zeros(1, length(SNR_dB));
 
 m_lin = (0 : m - 1)';
 mics_pos_mat = [m_lin * delta, zeros(m, 1)];
@@ -163,6 +202,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec, theoretical_cor, noise_mics_sig);
 
+        cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / m;
+        inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / m;
+%         noise_first_mic_energy = norm(added_noise(1, :))^2;
         mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / length(signal_target);
         mse_theoretical(index) = mse_theoretical(index) + ...
             norm(estimated_sig_theoretical - mics_sig(1, :))^2 / length(signal_target);
@@ -170,8 +212,12 @@ for monte_carlo_index = 1 : monte_carlo_num
 end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
+mse_mvdr = mse_mvdr / monte_carlo_num;
+cov_error = cov_error / monte_carlo_num;
+inv_cov_error = inv_cov_error / monte_carlo_num;
 
-figure(2);
+
+figure(5);
 hold on
 plot(SNR_dB, 10 * log10(mse))
 plot(SNR_dB, 10 * log10(mse_theoretical))
@@ -181,10 +227,22 @@ xlabel("SNR [dB]")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
 
+figure(6);
+plot(SNR_dB, cov_error)
+title("Correlation Matrix Difference Frobenius Norm")
+xlabel("SNR [dB]")
+ylabel("Frobenius Norm")
+
+figure(7);
+plot(SNR_dB, inv_cov_error)
+title("Inverse Correlation Matrix Difference Frobenius Norm")
+xlabel("SNR [dB]")
+ylabel("Frobenius Norm")
+
 
 %% Constant Number of Microphones, Constant SNR, Changing Number of Samples
-n_samples = [128 256 512 1024 2048 4096 8192 16384];
-SNR_dB = 10;
+n_samples = [128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144];
+SNR_dB = 50;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 
 m = 12;
@@ -193,6 +251,8 @@ mics_pos_mat = [m_lin * delta, zeros(m, 1)];
 
 mse = zeros(1, length(n_samples));
 mse_theoretical = zeros(1, length(n_samples));
+cov_error = zeros(1, length(n_samples));
+inv_cov_error = zeros(1, length(n_samples));
 
 phase_mic = zeros(m, 1);
 for i = 1 : m
@@ -209,8 +269,7 @@ for monte_carlo_index = 1 : monte_carlo_num
         mics_sig = steering_vec * signal_target_n_samples;
         added_noise = randn(size(mics_sig)) + 1j * randn(size(mics_sig));
         for i = 1 : m
-            added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
-        end
+            added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));        end
         noise_mics_sig = mics_sig + added_noise;
 
         phi_y = noise_mics_sig * noise_mics_sig';
@@ -220,6 +279,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             steering_vec_norm, theoretical_cor, noise_mics_sig);
 
+        cov_error(index) = cov_error(index) + norm(theoretical_cor - phi_y, 'fro') / m;
+        inv_cov_error(index) = inv_cov_error(index) + norm(pinv(theoretical_cor) - pinv(phi_y), 'fro') / m;
+%         noise_first_mic_energy = norm(added_noise(1, :))^2 / length(signal_target);
         mse(index) = mse(index) + norm(estimated_sig - mics_sig(1, :))^2 / n;
         mse_theoretical(index) = mse_theoretical(index) + ...
             norm(estimated_sig_theoretical - mics_sig(1, :))^2 / n;
@@ -227,20 +289,34 @@ for monte_carlo_index = 1 : monte_carlo_num
 end
 mse = mse / monte_carlo_num;
 mse_theoretical = mse_theoretical / monte_carlo_num;
+cov_error = cov_error / monte_carlo_num;
+inv_cov_error = inv_cov_error / monte_carlo_num;
 
-figure(3);
+figure(8);
 hold on
-plot(n_samples, mse)
-plot(n_samples, mse_theoretical)
+plot(n_samples, 10 * log10(mse))
+plot(n_samples, 10 * log10(mse_theoretical))
 title("MSE Error of Estimated Signal")
 ylabel("MSE")
 xlabel("Number of Samples")
 legend("Empirical Correlation Matrix", "Theoretical Correlation Matrix")
 hold off
 
+figure(9);
+plot(n_samples, cov_error)
+title("Correlation Matrix Difference Frobenius Norm")
+xlabel("Number of Samples")
+ylabel("Frobenius Norm")
+
+figure(10);
+plot(n_samples, inv_cov_error)
+title("Inverse Correlation Matrix Difference Frobenius Norm")
+xlabel("Number of Samples")
+ylabel("Frobenius Norm")
+
 
 %% Constant SNR, Chaning Number of Microphones, With Interference
-num_of_mics = [1 2 4 8 16];
+num_of_mics = [1 2 : 2: 20];
 SNR_dB = 10;
 noise_gain = target_gain / 10^(SNR_dB / 20);
 mse = zeros(1, length(num_of_mics));
@@ -426,7 +502,7 @@ hold off
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Position
 m = 12;
-SNR_dB = 60;
+SNR_dB = 40;
 angles = linspace(0, pi, 13);
 inter_pos_list = norm(target_pos) * [cos(angles)' sin(angles)'];
 noise_gain = target_gain / 10^(SNR_dB / 20);
