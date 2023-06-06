@@ -1,6 +1,4 @@
 # SERGHPDM
-Signal Enhancement using Riemannian Geometry of the HPD Manifold
-
 <h1 align="center">
   <br>
 Signal Enhancement using Riemannian Geometry of the HPD Manifold
