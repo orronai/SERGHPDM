@@ -37,7 +37,7 @@ sig_length = 8192;
 target_gain = 1;
 signal_target = randn(1, sig_length) + 1j * randn(1, sig_length);
 signal_target = target_gain * signal_target / norm(signal_target);
-target_pos = [-100 100];
+target_pos = 100 * randn(1, 2);
 
 SIR_dB = 10;
 inter_gain = target_gain / 10^(SIR_dB / 20);
@@ -45,7 +45,7 @@ inter_sig = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig = inter_gain * inter_sig / norm(inter_sig);
 inter_pos = [200 200];
 
-monte_carlo_num = 500;
+monte_carlo_num = 300;
 
 
 %% Monte Carlo Correlation Matrix
@@ -66,7 +66,7 @@ for index = 1 : length(num_of_mics)
             phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
-        steering_vec = exp(1j * phase_mic);
+        steering_vec = exp(-1j * 2 * pi * phase_mic);
         mics_sig = steering_vec * signal_target;
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
@@ -87,7 +87,7 @@ ylabel("Frobenius Norm")
 
 %% Constant SNR, Changing Number of Microphones
 num_of_mics = [1 2 : 2 : 20];
-SNR_dB = 50;
+SNR_dB = 10;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 mse = zeros(1, length(num_of_mics));
 mse_noisy_h_mvdr = zeros(1, length(num_of_mics));
@@ -107,7 +107,7 @@ for monte_carlo_index = 1 : monte_carlo_num
             phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
-        steering_vec = exp(1j * phase_mic);
+        steering_vec = exp(-1j * 2 * pi * phase_mic);
         mics_sig = steering_vec * signal_target;
         noise_mics_sig = mics_sig + added_noise;
         steering_vec = steering_vec / steering_vec(1);
@@ -180,7 +180,7 @@ phase_mic = zeros(m, 1);
 for i = 1 : m
     phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
 end
-steering_vec = exp(1j * phase_mic);
+steering_vec = exp(-1j * 2 * pi * phase_mic);
 mics_sig = steering_vec * signal_target;
 
 for monte_carlo_index = 1 : monte_carlo_num
@@ -241,7 +241,7 @@ ylabel("Frobenius Norm")
 
 %% Constant Number of Microphones, Constant SNR, Changing Number of Samples
 n_samples = [128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144];
-SNR_dB = 50;
+SNR_dB = 10;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 
 m = 12;
@@ -257,7 +257,7 @@ phase_mic = zeros(m, 1);
 for i = 1 : m
     phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
 end
-steering_vec = exp(1j * phase_mic);
+steering_vec = exp(-1j * 2 * pi * phase_mic);
 steering_vec_norm = steering_vec / steering_vec(1);
 
 for monte_carlo_index = 1 : monte_carlo_num
@@ -268,7 +268,8 @@ for monte_carlo_index = 1 : monte_carlo_num
         mics_sig = steering_vec * signal_target_n_samples;
         added_noise = randn(size(mics_sig)) + 1j * randn(size(mics_sig));
         for i = 1 : m
-            added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));        end
+            added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
+        end
         noise_mics_sig = mics_sig + added_noise;
 
         phi_y = noise_mics_sig * noise_mics_sig';
@@ -334,8 +335,8 @@ for monte_carlo_index = 1 : monte_carlo_num
             phase_mic_inter(i) = norm(mics_pos_mat(i, :) - inter_pos) / lambda;
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
-        steering_vec = exp(1j * phase_mic);
-        steering_vec_inter = exp(1j * phase_mic_inter);
+        steering_vec = exp(-1j * 2 * pi * phase_mic);
+        steering_vec_inter = exp(-1j * 2 * pi * phase_mic_inter);
         mics_sig_clean = steering_vec * signal_target;
         mics_sig = mics_sig_clean + steering_vec_inter * inter_sig;
         noise_mics_sig = mics_sig + added_noise;
@@ -391,8 +392,8 @@ for i = 1 : m
     phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
     phase_mic_inter(i) = norm(mics_pos_mat(i, :) - inter_pos) / lambda;
 end
-steering_vec = exp(1j * phase_mic);
-steering_vec_inter = exp(1j * phase_mic_inter);
+steering_vec = exp(-1j * 2 * pi * phase_mic);
+steering_vec_inter = exp(-1j * 2 * pi * phase_mic_inter);
 steering_vec_norm = steering_vec / steering_vec(1);
 steering_vec_inter_norm = steering_vec_inter / steering_vec_inter(1);
 
@@ -457,8 +458,8 @@ for i = 1 : m
     phase_mic(i) = norm(mics_pos_mat(i, :) - target_pos) / lambda;
     phase_mic_inter(i) = norm(mics_pos_mat(i, :) - inter_pos) / lambda;
 end
-steering_vec = exp(1j * phase_mic);
-steering_vec_inter = exp(1j * phase_mic_inter);
+steering_vec = exp(-1j * 2 * pi * phase_mic);
+steering_vec_inter = exp(-1j * 2 * pi * phase_mic_inter);
 steering_vec_normalized = steering_vec / steering_vec(1);
 steering_vec_inter_normalized = steering_vec_inter / steering_vec_inter(1);
 
@@ -502,7 +503,7 @@ hold off
 
 %% Constant SNR, Constant Number of Microphones, With Interference, Changing Interference Position
 m = 12;
-SNR_dB = 80;
+SNR_dB = -20;
 angles = linspace(0, pi, 13);
 inter_pos_list = norm(target_pos) * [cos(angles)' sin(angles)'];
 noise_gain = target_gain / 10^(SNR_dB / 20);
@@ -522,8 +523,8 @@ for monte_carlo_index = 1 : monte_carlo_num
             phase_mic_inter(i) = norm(mics_pos_mat(i, :) - inter_pos_list(index)) / lambda;
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
-        steering_vec = exp(1j * phase_mic);
-        steering_vec_inter = exp(1j * phase_mic_inter);
+        steering_vec = exp(-1j * 2 * pi * phase_mic);
+        steering_vec_inter = exp(-1j * 2 * pi * phase_mic_inter);
         mics_sig_clean = steering_vec * signal_target;
         mics_sig = mics_sig_clean + steering_vec_inter * inter_sig;
         noise_mics_sig = mics_sig + added_noise;
@@ -552,6 +553,7 @@ figure(7);
 hold on
 plot(angles * 180 / pi, mse)
 plot(angles * 180 / pi, mse_theoretical)
+xline(135)
 title("NMSE Error of Estimated Signal")
 ylabel("NMSE")
 xlabel("Angle [rad]")
