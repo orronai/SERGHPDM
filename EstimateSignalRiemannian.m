@@ -11,6 +11,7 @@ target_gain = 1;
 signal_target = randn(1, sig_length) + 1j * randn(1, sig_length);
 signal_target = target_gain * signal_target / norm(signal_target);
 target_pos = [25 18];
+target_angle = atan2(target_pos(2), target_pos(1));
 
 SIR_dB_1 = -10;
 inter_gain_1 = target_gain / 10^(SIR_dB_1 / 20);
@@ -39,6 +40,8 @@ noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 
 p_mvdr_full_R = zeros(length(num_of_mics), length(theta));
 p_mvdr_full_E = zeros(length(num_of_mics), length(theta));
+p_ds_full_R = zeros(length(num_of_mics), length(theta));
+p_ds_full_E = zeros(length(num_of_mics), length(theta));
 
 for index = 1 : length(num_of_mics)
     m = num_of_mics(index);
@@ -78,22 +81,32 @@ for index = 1 : length(num_of_mics)
 
     p_mvdr_R = zeros(1, length(theta));
     p_mvdr_E = zeros(1, length(theta));
-    
+    p_ds_R = zeros(1, length(theta));
+    p_ds_E = zeros(1, length(theta));
+
     for i = 1 : length(theta)
         steering_vec_theta = exp(1j * 2 * pi * delta / lambda .* m_lin * cos(theta(i) * pi / 180));
         p_mvdr_R(i) = 1 / (steering_vec_theta' * pinv(GammaR) * steering_vec_theta);
         p_mvdr_E(i) = 1 / (steering_vec_theta' * pinv(phi_y) * steering_vec_theta);
+        p_ds_R(i) = steering_vec_theta' * GammaR * steering_vec_theta;
+        p_ds_E(i) = steering_vec_theta' * phi_y * steering_vec_theta;
     end
 
     p_mvdr_full_R(index, :) = DuplicateSpectrumFunc(p_mvdr_R);
+    p_ds_full_R(index, :) = DuplicateSpectrumFunc(p_ds_R);
 
     [~, max_theta_ind_mvdr_R] = max(p_mvdr_full_R(index, :));
     theta_max_mvdr_R = theta(max_theta_ind_mvdr_R);
+    [~, max_theta_ind_ds_R] = max(p_ds_full_R(index, :));
+    theta_max_ds_R = theta(max_theta_ind_ds_R);
 
     p_mvdr_full_E(index, :) = DuplicateSpectrumFunc(p_mvdr_E);
+    p_ds_full_E(index, :) = DuplicateSpectrumFunc(p_ds_E);
 
     [~, max_theta_ind_mvdr_E] = max(p_mvdr_full_E(index, :));
     theta_max_mvdr_E = theta(max_theta_ind_mvdr_E);
+    [~, max_theta_ind_ds_E] = max(p_ds_full_E(index, :));
+    theta_max_ds_E = theta(max_theta_ind_ds_E);
 end
 
 fig = figure(1);
@@ -103,14 +116,18 @@ for index = 1 : length(num_of_mics)
     polarplot(theta / 180 * pi, p_mvdr_full_R(index, :))
     hold on
     polarplot(theta / 180 * pi, p_mvdr_full_E(index, :))
-    polarplot([atan2(target_pos(2), target_pos(1)); atan2(target_pos(2), target_pos(1))], [-20; 0])
-    title("Spectrum MVDR, Microphones: " + num_of_mics(index))
+    polarplot(theta / 180 * pi, p_ds_full_R(index, :))
+    polarplot(theta / 180 * pi, p_ds_full_E(index, :))
+    polarplot([target_angle; target_angle], [-20; 0])
+    title("Spectrum, Microphones: " + num_of_mics(index))
     subtitle("SNR=" + SNR_dB + "[dB], SIR_1=" + SIR_dB_1 + "[dB], SIR_2=" + SIR_dB_2 + "[dB]")
     hold off
     rlim([-20 0])
     thetalim([0 180])
-    legend("Empirical Riemmanian Correlation Matrix", ...
-        "Empirical Euclidian Correlation Matrix", ...
+    legend("MVDR Empirical Riemmanian Correlation Matrix", ...
+        "MVDR Empirical Euclidian Correlation Matrix", ...
+        "DS Riemmanian Euclidian Correlation Matrix", ...
+        "DS Empirical Euclidian Correlation Matrix", ...
         "Target Tranmitter")
     pause(1)
     drawnow
@@ -282,7 +299,7 @@ hold off
 
 
 %% Estimate ATF With Eigenvector Corresponding to The Biggest Eigenvalue
-num_of_mics = 2 : 2 : 20;
+num_of_mics = 2 : 2 : 24;
 SNR_dB = 15;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
 mse_E = zeros(1, length(num_of_mics));
