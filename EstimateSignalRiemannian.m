@@ -10,19 +10,19 @@ sig_length = 8192;
 target_gain = 1;
 signal_target = randn(1, sig_length) + 1j * randn(1, sig_length);
 signal_target = target_gain * signal_target / norm(signal_target);
-target_pos = [19 30];
+target_pos = [25 18];
 
 SIR_dB_1 = -10;
 inter_gain_1 = target_gain / 10^(SIR_dB_1 / 20);
 inter_sig_1 = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig_1 = inter_gain_1 * inter_sig_1 / norm(inter_sig_1);
-inter_pos_1 = [46 11];
+inter_pos_1 = [-37 9];
 
 SIR_dB_2 = -10;
 inter_gain_2 = target_gain / 10^(SIR_dB_2 / 20);
 inter_sig_2 = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig_2 = inter_gain_2 * inter_sig_2 / norm(inter_sig_2);
-inter_pos_2 = [5 45];
+inter_pos_2 = [1 23];
 
 mask = [ones(1, sig_length / 2), zeros(1, sig_length / 2)];
 inter_sig_1 = inter_sig_1 .* mask;
@@ -33,9 +33,12 @@ monte_carlo_num = 500;
 
 %% Constant SNR, Changing Number of Microphones DOA
 theta = 0 : 1e-1 : 180;
-num_of_mics = 2 : 2 : 20;
+num_of_mics = 2 : 2 : 24;
 SNR_dB = 5;
 noise_gain = target_gain / 10^(SNR_dB / 20);  % Epsilon
+
+p_mvdr_full_R = zeros(length(num_of_mics), length(theta));
+p_mvdr_full_E = zeros(length(num_of_mics), length(theta));
 
 for index = 1 : length(num_of_mics)
     m = num_of_mics(index);
@@ -81,28 +84,44 @@ for index = 1 : length(num_of_mics)
         p_mvdr_R(i) = 1 / (steering_vec_theta' * pinv(GammaR) * steering_vec_theta);
         p_mvdr_E(i) = 1 / (steering_vec_theta' * pinv(phi_y) * steering_vec_theta);
     end
-    
-    p_mvdr_full_R = DuplicateSpectrumFunc(p_mvdr_R);
-    
-    [~, max_theta_ind_mvdr_R] = max(p_mvdr_full_R);
+
+    p_mvdr_full_R(index, :) = DuplicateSpectrumFunc(p_mvdr_R);
+
+    [~, max_theta_ind_mvdr_R] = max(p_mvdr_full_R(index, :));
     theta_max_mvdr_R = theta(max_theta_ind_mvdr_R);
 
-    p_mvdr_full_E = DuplicateSpectrumFunc(p_mvdr_E);
-    
-    [~, max_theta_ind_mvdr_E] = max(p_mvdr_full_E);
+    p_mvdr_full_E(index, :) = DuplicateSpectrumFunc(p_mvdr_E);
+
+    [~, max_theta_ind_mvdr_E] = max(p_mvdr_full_E(index, :));
     theta_max_mvdr_E = theta(max_theta_ind_mvdr_E);
+end
 
-    figure;
-    polarplot(theta / 180 * pi, p_mvdr_full_R)
-    title("Spectrum MVDR Riemmanian, Microphones: " + m)
+fig = figure(1);
+fig.WindowState = 'maximized';
+filename = "DOA-Animation-1.gif";  % Specify the output file name
+for index = 1 : length(num_of_mics)
+    polarplot(theta / 180 * pi, p_mvdr_full_R(index, :))
+    hold on
+    polarplot(theta / 180 * pi, p_mvdr_full_E(index, :))
+    polarplot([atan2(target_pos(2), target_pos(1)); atan2(target_pos(2), target_pos(1))], [-20; 0])
+    title("Spectrum MVDR, Microphones: " + num_of_mics(index))
+    subtitle("SNR=" + SNR_dB + "[dB], SIR_1=" + SIR_dB_1 + "[dB], SIR_2=" + SIR_dB_2 + "[dB]")
+    hold off
     rlim([-20 0])
     thetalim([0 180])
-
-    figure;
-    polarplot(theta / 180 * pi, p_mvdr_full_E)
-    title("Spectrum MVDR Euclidian, Microphones: " + m)
-    rlim([-20 0])
-    thetalim([0 180])
+    legend("Empirical Riemmanian Correlation Matrix", ...
+        "Empirical Euclidian Correlation Matrix", ...
+        "Target Tranmitter")
+    pause(1)
+    drawnow
+    frame = getframe(fig);
+    im = frame2im(frame);
+    [A, map] = rgb2ind(im, 256);
+    if index == 1
+        imwrite(A, map, filename, "gif", "LoopCount", Inf, "DelayTime", 1);
+    else
+        imwrite(A, map, filename, "gif", "WriteMode", "append", "DelayTime", 1);
+    end
 end
 
 
