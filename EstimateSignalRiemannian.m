@@ -6,8 +6,8 @@ clc; clear all; close all;
 lambda = 0.087214428857715;
 delta = lambda / 2;
 trans_dist = 30;
-inter_1_dist = 30;
-inter_2_dist = 30;
+inter_1_dist = 28;
+inter_2_dist = 35;
 
 sig_length = 1024;
 target_gain = 1;
@@ -373,6 +373,10 @@ for index = 1 : length(num_of_mics)
     mics_sig = atf_trans * signal_target;
     mics_inter_sig_1 = atf_inter_1 * inter_sig_1;
     mics_inter_sig_2 = atf_inter_2 * inter_sig_2;
+    SIR_dB_1_eff = 20 * log10 (norm(mics_sig(1, :)) / norm(mics_inter_sig_1(1, :)));
+    SIR_dB_2_eff = 20 * log10 (norm(mics_sig(1, :)) / norm(mics_inter_sig_2(1, :)));
+    inter_gain_1_eff = target_gain / 10^(SIR_dB_1_eff / 20);
+    inter_gain_2_eff = target_gain / 10^(SIR_dB_1_eff / 20);
     atf_trans = atf_trans / atf_trans(1);
     atf_inter_1 = atf_inter_1 / atf_inter_1(1);
     atf_inter_2 = atf_inter_2 / atf_inter_2(1);
@@ -402,8 +406,8 @@ for index = 1 : length(num_of_mics)
         [h_mvdr_R, estimated_sig_R] = MvdrCoefficients(atf_trans_est_R, GammaR, noise_mics_sig);
 
         theoretical_cor = atf_trans * atf_trans' + ...
-            inter_gain_1^2 * (atf_inter_1 * atf_inter_1') + ...
-            inter_gain_2^2 * (atf_inter_2 * atf_inter_2') + ...
+            inter_gain_1_eff^2 * (atf_inter_1 * atf_inter_1') + ...
+            inter_gain_2_eff^2 * (atf_inter_2 * atf_inter_2') + ...
             diag(noise_gain.^2);
         [h_mvdr_theoretical, estimated_sig_theoretical] = MvdrCoefficients(...
             atf_trans, theoretical_cor, noise_mics_sig);
@@ -438,7 +442,7 @@ errorbar(num_of_mics, mean_log_mse_E, std_log_mse_E)
 errorbar(num_of_mics, mean_log_mse_R, std_log_mse_R)
 errorbar(num_of_mics, mean_log_mse_theoretical, std_log_mse_theoretical)
 title("Log NMSE Error of Estimated Signal With Attenuation, With Estimated ATF")
-subtitle("Number of Samples=" + sig_length + ", SNR=" + SNR_dB + "[dB], SIR_1=" + SIR_dB_1 + "[dB], SIR_2=" + SIR_dB_2 + "[dB]")
+subtitle("Number of Samples=" + sig_length + ", SNR=" + SNR_dB + "[dB], SIR\_eff_1=" + SIR_dB_1_eff + "[dB], SIR\_eff_2=" + SIR_dB_2_eff + "[dB]")
 ylabel("Log NMSE")
 xlabel("Number of Microphones")
 legend("Sampling \Gamma_E", "Sampling \Gamma_R", "Population \Gamma")
