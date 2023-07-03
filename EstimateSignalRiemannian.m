@@ -16,14 +16,14 @@ signal_target = target_gain * signal_target / norm(signal_target);
 target_angle = 35.6;
 target_pos = trans_dist * [cosd(target_angle) sind(target_angle)];
 
-SIR_dB_1 = -15;
+SIR_dB_1 = -10;
 inter_gain_1 = target_gain / 10^(SIR_dB_1 / 20);
 inter_sig_1 = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig_1 = inter_gain_1 * inter_sig_1 / norm(inter_sig_1);
 inter_angle_1 = 61.3;
 inter_pos_1 = inter_1_dist * [cosd(inter_angle_1) sind(inter_angle_1)];
 
-SIR_dB_2 = -10;
+SIR_dB_2 = -15;
 inter_gain_2 = target_gain / 10^(SIR_dB_2 / 20);
 inter_sig_2 = randn(1, sig_length) + 1j * randn(1, sig_length);
 inter_sig_2 = inter_gain_2 * inter_sig_2 / norm(inter_sig_2);
@@ -34,7 +34,7 @@ mask = [ones(1, sig_length / 2), zeros(1, sig_length / 2)];
 inter_sig_1 = inter_sig_1 .* mask;
 inter_sig_2 = inter_sig_2 .* (1 - mask);
 
-monte_carlo_num = 500;
+monte_carlo_num = 3000;
 
 
 %% Constant SNR, Changing Number of Microphones, Without Attenuation
@@ -131,6 +131,13 @@ log_nmse_theoretical = zeros(1, length(num_of_mics));
 
 
 for monte_carlo_index = 1 : monte_carlo_num
+    rand_target_angle = rand * 180;
+    rand_inter_angle_1 = rand * 180;
+    rand_inter_angle_2 = rand * 180;
+    rand_target_pos = trans_dist * [cosd(rand_target_angle) sind(rand_target_angle)];
+    rand_inter_pos_1 = inter_1_dist * [cosd(rand_inter_angle_1) sind(rand_inter_angle_1)];
+    rand_inter_pos_2 = inter_2_dist * [cosd(rand_inter_angle_2) sind(rand_inter_angle_2)];
+
     for index = 1 : length(num_of_mics)
         m = num_of_mics(index);
         m_lin = (0 : m - 1)';
@@ -140,9 +147,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         distance_inter_2 = zeros(m, 1);
         added_noise = randn(m, sig_length) + 1j * randn(m, sig_length);
         for i = 1 : m
-            distance_trans(i) = norm(mics_pos_mat(i, :) - target_pos);
-            distance_inter_1(i) = norm(mics_pos_mat(i, :) - inter_pos_1);
-            distance_inter_2(i) = norm(mics_pos_mat(i, :) - inter_pos_2);
+            distance_trans(i) = norm(mics_pos_mat(i, :) - rand_target_pos);
+            distance_inter_1(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_1);
+            distance_inter_2(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_2);
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
         phase_mic = distance_trans / lambda;
@@ -194,7 +201,7 @@ hold on
 errorbar(num_of_mics, mean_log_nmse_E, std_log_nmse_E)
 errorbar(num_of_mics, mean_log_nmse_R, std_log_nmse_R)
 errorbar(num_of_mics, mean_log_nmse_theoretical, std_log_nmse_theoretical)
-title("Log NMSE Error of Estimated Signal Without Attenuation")
+title("Log NMSE Error of Estimated Signal Without Attenuation, Over Random Angles")
 subtitle("Number of Samples=" + sig_length + ", SNR=" + SNR_dB + "[dB], SIR_1=" + SIR_dB_1 + "[dB], SIR_2=" + SIR_dB_2 + "[dB]")
 ylabel("Log NMSE")
 xlabel("Number of Microphones")
@@ -301,6 +308,12 @@ log_nmse_theoretical = zeros(1, length(num_of_mics));
 
 
 for monte_carlo_index = 1 : monte_carlo_num
+    rand_target_angle = rand * 180;
+    rand_inter_angle_1 = rand * 180;
+    rand_inter_angle_2 = rand * 180;
+    rand_target_pos = trans_dist * [cosd(rand_target_angle) sind(rand_target_angle)];
+    rand_inter_pos_1 = inter_1_dist * [cosd(rand_inter_angle_1) sind(rand_inter_angle_1)];
+    rand_inter_pos_2 = inter_2_dist * [cosd(rand_inter_angle_2) sind(rand_inter_angle_2)];
     for index = 1 : length(num_of_mics)
         m = num_of_mics(index);
         noise_gain = zeros(1, m);
@@ -311,9 +324,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         distance_inter_2 = zeros(m, 1);
         added_noise = randn(m, sig_length) + 1j * randn(m, sig_length);
         for i = 1 : m
-            distance_trans(i) = norm(mics_pos_mat(i, :) - target_pos);
-            distance_inter_1(i) = norm(mics_pos_mat(i, :) - inter_pos_1);
-            distance_inter_2(i) = norm(mics_pos_mat(i, :) - inter_pos_2);
+            distance_trans(i) = norm(mics_pos_mat(i, :) - rand_target_pos);
+            distance_inter_1(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_1);
+            distance_inter_2(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_2);
             target_gain_mic_i = target_gain / distance_trans(i);
             noise_gain(i) = target_gain_mic_i / 10^(SNR_dB / 20);  % Epsilon
             added_noise(i, :) = noise_gain(i) * (added_noise(i, :) / norm(added_noise(i, :)));
@@ -519,6 +532,12 @@ h_mvdr_R_similarity = zeros(length(num_of_mics), monte_carlo_num);
 
 
 for monte_carlo_index = 1 : monte_carlo_num
+    rand_target_angle = rand * 180;
+    rand_inter_angle_1 = rand * 180;
+    rand_inter_angle_2 = rand * 180;
+    rand_target_pos = trans_dist * [cosd(rand_target_angle) sind(rand_target_angle)];
+    rand_inter_pos_1 = inter_1_dist * [cosd(rand_inter_angle_1) sind(rand_inter_angle_1)];
+    rand_inter_pos_2 = inter_2_dist * [cosd(rand_inter_angle_2) sind(rand_inter_angle_2)];
     for index = 1 : length(num_of_mics)
         m = num_of_mics(index);
         m_lin = (0 : m - 1)';
@@ -528,9 +547,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         distance_inter_2 = zeros(m, 1);
         added_noise = randn(m, sig_length) + 1j * randn(m, sig_length);
         for i = 1 : m
-            distance_trans(i) = norm(mics_pos_mat(i, :) - target_pos);
-            distance_inter_1(i) = norm(mics_pos_mat(i, :) - inter_pos_1);
-            distance_inter_2(i) = norm(mics_pos_mat(i, :) - inter_pos_2);
+            distance_trans(i) = norm(mics_pos_mat(i, :) - rand_target_pos);
+            distance_inter_1(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_1);
+            distance_inter_2(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_2);
             added_noise(i, :) = noise_gain * (added_noise(i, :) / norm(added_noise(i, :)));
         end
         phase_mic = distance_trans / lambda;
@@ -600,7 +619,7 @@ hold on
 errorbar(num_of_mics, mean_log_mse_E, std_log_mse_E)
 errorbar(num_of_mics, mean_log_mse_R, std_log_mse_R)
 errorbar(num_of_mics, mean_log_mse_theoretical, std_log_mse_theoretical)
-title("Log NMSE Error of Estimated Signal Without Attenuation, With Estimated ATF")
+title("Log NMSE Error of Estimated Signal Without Attenuation, With Estimated ATF, Over Random Angles")
 subtitle("Number of Samples=" + sig_length + ", SNR=" + SNR_dB + "[dB], SIR_1=" + SIR_dB_1 + "[dB], SIR_2=" + SIR_dB_2 + "[dB]")
 ylabel("Log NMSE")
 xlabel("Number of Microphones")
@@ -611,7 +630,7 @@ figure(9);
 hold on
 errorbar(num_of_mics, mean_atf_E_similarity, std_atf_E_similarity)
 errorbar(num_of_mics, mean_atf_R_similarity, std_atf_R_similarity)
-title("ATF Similarity Without Attenuation, $\Re\{\frac{a^H \cdot a_e}{||a|| \cdot ||a_e||}\}$", 'Interpreter', 'latex')
+title("ATF Similarity Without Attenuation, Over Random Angles, $\Re\{\frac{a^H \cdot a_e}{||a|| \cdot ||a_e||}\}$", 'Interpreter', 'latex')
 ylabel("Degree Similarity")
 xlabel("Number of Microphones")
 legend("Sampling \Gamma_E", "Sampling \Gamma_R")
@@ -621,7 +640,7 @@ figure(10);
 hold on
 errorbar(num_of_mics, mean_h_mvdr_E_similarity, std_h_mvdr_E_similarity)
 errorbar(num_of_mics, mean_h_mvdr_R_similarity, std_h_mvdr_R_similarity)
-title("h$_{MVDR}$ Similarity With Attenuation, $\Re\{\frac{h^H \cdot h_e}{||h|| \cdot ||h_e||}\}$", 'Interpreter', 'latex')
+title("h$_{MVDR}$ Similarity With Attenuation, Over Random Angles, $\Re\{\frac{h^H \cdot h_e}{||h|| \cdot ||h_e||}\}$", 'Interpreter', 'latex')
 ylabel("Degree Similarity")
 xlabel("Number of Microphones")
 legend("Sampling \Gamma_E", "Sampling \Gamma_R")
@@ -773,6 +792,12 @@ h_mvdr_R_similarity = zeros(length(num_of_mics), monte_carlo_num);
 
 
 for monte_carlo_index = 1 : monte_carlo_num
+    rand_target_angle = rand * 180;
+    rand_inter_angle_1 = rand * 180;
+    rand_inter_angle_2 = rand * 180;
+    rand_target_pos = trans_dist * [cosd(rand_target_angle) sind(rand_target_angle)];
+    rand_inter_pos_1 = inter_1_dist * [cosd(rand_inter_angle_1) sind(rand_inter_angle_1)];
+    rand_inter_pos_2 = inter_2_dist * [cosd(rand_inter_angle_2) sind(rand_inter_angle_2)];
     for index = 1 : length(num_of_mics)
         m = num_of_mics(index);
         noise_gain = zeros(1, m);
@@ -783,9 +808,9 @@ for monte_carlo_index = 1 : monte_carlo_num
         distance_inter_2 = zeros(m, 1);
         added_noise = randn(m, sig_length) + 1j * randn(m, sig_length);
         for i = 1 : m
-            distance_trans(i) = norm(mics_pos_mat(i, :) - target_pos);
-            distance_inter_1(i) = norm(mics_pos_mat(i, :) - inter_pos_1);
-            distance_inter_2(i) = norm(mics_pos_mat(i, :) - inter_pos_2);
+            distance_trans(i) = norm(mics_pos_mat(i, :) - rand_target_pos);
+            distance_inter_1(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_1);
+            distance_inter_2(i) = norm(mics_pos_mat(i, :) - rand_inter_pos_2);
             target_gain_mic_i = target_gain / distance_trans(i);
             noise_gain(i) = target_gain_mic_i / 10^(SNR_dB / 20);  % Epsilon
             added_noise(i, :) = noise_gain(i) * (added_noise(i, :) / norm(added_noise(i, :)));
@@ -861,7 +886,7 @@ hold on
 errorbar(num_of_mics, mean_log_mse_E, std_log_mse_E)
 errorbar(num_of_mics, mean_log_mse_R, std_log_mse_R)
 errorbar(num_of_mics, mean_log_mse_theoretical, std_log_mse_theoretical)
-title("Log NMSE Error of Estimated Signal With Attenuation, With Estimated ATF")
+title("Log NMSE Error of Estimated Signal With Attenuation, With Estimated ATF, Over Random Angles")
 subtitle("Number of Samples=" + sig_length + ", SNR=" + SNR_dB + "[dB], SIR\_eff_1=" + SIR_dB_1_eff + "[dB], SIR\_eff_2=" + SIR_dB_2_eff + "[dB]")
 ylabel("Log NMSE")
 xlabel("Number of Microphones")
@@ -872,7 +897,7 @@ figure(15);
 hold on
 errorbar(num_of_mics, mean_atf_E_similarity, std_atf_E_similarity)
 errorbar(num_of_mics, mean_atf_R_similarity, std_atf_R_similarity)
-title("ATF Similarity With Attenuation, $\Re\{\frac{a^H \cdot a_e}{||a|| \cdot ||a_e||}\}$", 'Interpreter', 'latex')
+title("ATF Similarity With Attenuation, Over Random Angles, $\Re\{\frac{a^H \cdot a_e}{||a|| \cdot ||a_e||}\}$", 'Interpreter', 'latex')
 ylabel("Degree Similarity")
 xlabel("Number of Microphones")
 legend("Sampling \Gamma_E", "Sampling \Gamma_R")
@@ -882,7 +907,7 @@ figure(16);
 hold on
 errorbar(num_of_mics, mean_h_mvdr_E_similarity, std_h_mvdr_E_similarity)
 errorbar(num_of_mics, mean_h_mvdr_R_similarity, std_h_mvdr_R_similarity)
-title("h$_{MVDR}$ Similarity With Attenuation, $\Re\{\frac{h^H \cdot h_e}{||h|| \cdot ||h_e||}\}$", 'Interpreter', 'latex')
+title("h$_{MVDR}$ Similarity With Attenuation, Over Random Angles, $\Re\{\frac{h^H \cdot h_e}{||h|| \cdot ||h_e||}\}$", 'Interpreter', 'latex')
 ylabel("Degree Similarity")
 xlabel("Number of Microphones")
 legend("Sampling \Gamma_E", "Sampling \Gamma_R")
